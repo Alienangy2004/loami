@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Machine Learning: ¿Verdadero o Falso?</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & Plus Jakarta Sans -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
+    <!-- Tone.js para efectos de sonido sintéticos opcionales sin archivos externos -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top left, #1e1b4b, #0f172a 60%, #020617);
+            min-height: 100vh;
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, .font-display {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        /* Efectos de vidrio esmerilado (Glassmorphism) */
+        .glass-card {
+            background: rgba(30, 41, 59, 0.72);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Botones estilo juego con relieve y transición suave */
+        .game-btn {
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+        }
+
+        .game-btn:hover:not(:disabled) {
+            transform: translateY(-3px) scale(1.01);
+        }
+
+        .game-btn:active:not(:disabled) {
+            transform: translateY(1px) scale(0.98);
+        }
+
+        /* Animaciones de entrada */
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .animate-card {
+            animation: fadeInScale 0.35s ease-out forwards;
+        }
+
+        @keyframes pulseSlow {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.06); }
+        }
+
+        .emoji-float {
+            animation: pulseSlow 3s infinite ease-in-out;
+        }
+
+        /* Canvas de confeti superpuesto sin bloquear clics */
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 50;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 min-h-screen relative">
+
+    <!-- Canvas para animación de confeti al terminar -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- Decoración de fondo -->
+    <div class="fixed top-10 left-10 w-64 h-64 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="fixed bottom-10 right-10 w-72 h-72 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+    <!-- Contenedor Principal -->
+    <main class="w-full max-w-2xl z-10">
+
+        <!-- Cabecera Superior con Botón de Sonido -->
+        <header class="flex items-center justify-between mb-4 px-2">
+            <div class="flex items-center gap-2">
+                <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-400/30 text-lg">🤖</span>
+                <span class="text-xs sm:text-sm font-semibold tracking-wider uppercase text-indigo-300">Trivia Cotidiana</span>
+            </div>
+            <button id="sound-toggle" onclick="toggleSound()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800/80 hover:bg-slate-700/80 border border-slate-600/50 text-xs font-medium text-slate-300 transition" title="Activar/Desactivar sonidos">
+                <span id="sound-icon">🔊</span>
+                <span id="sound-text">Sonido: ON</span>
+            </button>
+        </header>
+
+        <!-- ==================== PANTALLA 1: BIENVENIDA ==================== -->
+        <section id="welcome-screen" class="glass-card rounded-3xl p-6 sm:p-10 text-center animate-card">
+            <div class="inline-flex items-center justify-center p-4 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-cyan-500/20 border border-indigo-400/30 mb-6 emoji-float">
+                <span class="text-5xl sm:text-6xl">🧠✨</span>
+            </div>
+
+            <span class="inline-block px-3.5 py-1 rounded-full bg-cyan-500/15 border border-cyan-400/30 text-cyan-300 text-xs font-semibold tracking-wide uppercase mb-3">
+                Sin tecnicismos • 100% cotidiano
+            </span>
+
+            <h1 class="text-2xl sm:text-4xl font-extrabold text-white leading-tight mb-4">
+                Machine Learning:<br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400">
+                    Está más cerca de lo que imaginas
+                </span>
+            </h1>
+
+            <p class="text-slate-300 text-sm sm:text-base leading-relaxed mb-8 max-w-lg mx-auto">
+                El <strong>Aprendizaje Automático</strong> es la tecnología que permite a tu celular y tus aplicaciones favoritas aprender de tus hábitos sin que un humano programe cada paso. ¿Puedes distinguir cómo funciona en tu día a día?
+            </p>
+
+            <!-- Tarjetas informativas rápidas -->
+            <div class="grid grid-cols-3 gap-3 mb-8 text-left">
+                <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-3 sm:p-4">
+                    <div class="text-xl sm:text-2xl mb-1">🎯</div>
+                    <div class="text-xs font-bold text-white">5 Preguntas</div>
+                    <div class="text-[11px] text-slate-400">Rápidas y claras</div>
+                </div>
+                <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-3 sm:p-4">
+                    <div class="text-xl sm:text-2xl mb-1">📱</div>
+                    <div class="text-xs font-bold text-white">Casos Reales</div>
+                    <div class="text-[11px] text-slate-400">Apps que ya usas</div>
+                </div>
+                <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-3 sm:p-4">
+                    <div class="text-xl sm:text-2xl mb-1">💡</div>
+                    <div class="text-xs font-bold text-white">Aprende al instante</div>
+                    <div class="text-[11px] text-slate-400">Explicación sencilla</div>
+                </div>
+            </div>
+
+            <button onclick="startGame()" class="game-btn w-full sm:w-auto min-w-[240px] py-4 px-8 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500 hover:from-indigo-400 hover:to-cyan-400 text-white font-bold text-lg shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-3 mx-auto">
+                <span>Comenzar Juego</span>
+                <span class="text-xl">🚀</span>
+            </button>
+        </section>
+
+        <!-- ==================== PANTALLA 2: JUEGO DE PREGUNTAS ==================== -->
+        <section id="quiz-screen" class="glass-card rounded-3xl p-6 sm:p-8 hidden">
+            <!-- Barra Superior de Estado -->
+            <div class="flex items-center justify-between gap-4 mb-4">
+                <div class="flex items-center gap-2">
+                    <span id="question-counter" class="px-3 py-1 rounded-xl bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 font-bold text-xs sm:text-sm">
+                        Pregunta 1 de 5
+                    </span>
+                </div>
+                <div class="flex items-center gap-2 bg-slate-800/90 border border-slate-700 px-3.5 py-1 rounded-xl">
+                    <span class="text-amber-400 text-sm">⭐</span>
+                    <span class="text-xs sm:text-sm font-semibold text-slate-300">Aciertos:</span>
+                    <span id="live-score" class="text-sm font-extrabold text-white">0</span>
+                </div>
+            </div>
+
+            <!-- Barra de Progreso -->
+            <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden mb-6 p-0.5 border border-slate-700/60">
+                <div id="progress-bar" class="h-full bg-gradient-to-r from-indigo-500 to-cyan-400 rounded-full transition-all duration-500" style="width: 20%"></div>
+            </div>
+
+            <!-- Contenido de la Pregunta -->
+            <div id="question-container" class="animate-card">
+                <div class="flex flex-col items-center text-center mb-6">
+                    <div id="question-emoji" class="text-4xl sm:text-5xl mb-3 p-4 rounded-2xl bg-slate-800/80 border border-slate-700/70 shadow-inner">
+                        🎬🎧
+                    </div>
+                    <h2 id="question-title" class="text-lg sm:text-xl font-bold text-cyan-300 mb-2">
+                        Título de la pregunta
+                    </h2>
+                    <p id="question-text" class="text-base sm:text-lg text-white font-medium leading-relaxed bg-slate-900/50 border border-slate-800 p-4 sm:p-5 rounded-2xl">
+                        Texto de la pregunta aquí...
+                    </p>
+                </div>
+
+                <!-- Botones Verdadero / Falso -->
+                <div id="answer-buttons" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-2">
+                    <button id="btn-true" onclick="submitAnswer(true)" class="game-btn flex items-center justify-center gap-3 py-4 px-6 rounded-2xl bg-slate-800/90 hover:bg-emerald-950/60 border-2 border-emerald-500/40 hover:border-emerald-400 text-white font-bold text-lg shadow-lg">
+                        <span class="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-400 flex items-center justify-center text-emerald-300 font-extrabold">✓</span>
+                        <span>Verdadero</span>
+                    </button>
+
+                    <button id="btn-false" onclick="submitAnswer(false)" class="game-btn flex items-center justify-center gap-3 py-4 px-6 rounded-2xl bg-slate-800/90 hover:bg-rose-950/60 border-2 border-rose-500/40 hover:border-rose-400 text-white font-bold text-lg shadow-lg">
+                        <span class="w-8 h-8 rounded-full bg-rose-500/20 border border-rose-400 flex items-center justify-center text-rose-300 font-extrabold">✕</span>
+                        <span>Falso</span>
+                    </button>
+                </div>
+
+                <!-- Atajo de teclado informativo en escritorio -->
+                <p id="keyboard-hint" class="hidden sm:block text-center text-xs text-slate-400 mt-3">
+                    Tip: También puedes presionar las teclas <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 text-slate-300">V</kbd> (Verdadero) o <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 text-slate-300">F</kbd> (Falso)
+                </p>
+
+                <!-- Tarjeta de Explicación (Oculta hasta responder) -->
+                <div id="feedback-card" class="hidden mt-6 rounded-2xl p-5 border transition-all animate-card">
+                    <div class="flex items-start gap-3.5">
+                        <div id="feedback-icon" class="text-2xl sm:text-3xl shrink-0 mt-0.5">✅</div>
+                        <div class="text-left">
+                            <h3 id="feedback-title" class="font-extrabold text-base sm:text-lg mb-1">
+                                ¡Correcto!
+                            </h3>
+                            <p id="feedback-explanation" class="text-slate-200 text-sm sm:text-base leading-relaxed">
+                                Explicación detallada...
+                            </p>
+                        </div>
+                    </div>
+
+                    <button id="next-btn" onclick="nextQuestion()" class="game-btn w-full mt-5 py-3.5 px-6 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-400 hover:to-cyan-400 text-white font-bold text-base shadow-md flex items-center justify-center gap-2">
+                        <span id="next-btn-text">Siguiente Pregunta</span>
+                        <span>➔</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== PANTALLA 3: RESULTADOS FINALES ==================== -->
+        <section id="results-screen" class="glass-card rounded-3xl p-6 sm:p-10 hidden animate-card">
+            <div class="text-center">
+                <div id="result-badge" class="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-indigo-500/20 border border-indigo-400/30 text-5xl mb-4 emoji-float">
+                    🏆
+                </div>
+
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-white mb-2">
+                    ¡Juego Completado!
+                </h2>
+
+                <p id="result-message" class="text-cyan-300 font-semibold text-base sm:text-lg mb-6">
+                    Mensaje personalizado según puntaje
+                </p>
+
+                <!-- Marcador Circular / Destacado -->
+                <div class="inline-flex flex-col items-center justify-center bg-slate-900/80 border border-slate-700/80 rounded-3xl px-8 py-5 mb-8 shadow-inner">
+                    <span class="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-1">Tu Puntuación Final</span>
+                    <div class="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-cyan-400 to-indigo-400">
+                        <span id="final-score">5</span> / 5
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resumen de lo aprendido -->
+            <div class="mb-8">
+                <h3 class="text-sm font-bold uppercase tracking-wider text-slate-300 mb-3 flex items-center gap-2">
+                    <span>📌</span> Resumen: El Machine Learning en tu día a día
+                </h3>
+                <div id="summary-list" class="space-y-3 max-h-80 overflow-y-auto pr-1">
+                    <!-- Generado dinámicamente por JS -->
+                </div>
+            </div>
+
+            <!-- Botón Jugar de Nuevo -->
+            <button onclick="restartGame()" class="game-btn w-full py-4 px-8 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500 hover:from-indigo-400 hover:to-cyan-400 text-white font-bold text-lg shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2">
+                <span>🔄</span>
+                <span>Jugar de nuevo</span>
+            </button>
+        </section>
+
+    </main>
+
+    <script>
+        // ==========================================
+        // BASE DE DATOS DE LAS 5 PREGUNTAS COTIDIANAS
+        // ==========================================
+        const questions = [
+            {
+                title: "El misterio de Netflix y Spotify",
+                question: "Cuando Netflix te recomienda una serie o Spotify arma tu lista semanal, hay un empleado de la empresa revisando tu historial para elegir manualmente lo que te podría gustar.",
+                correctAnswer: false, // Falso
+                explanation: "Sería imposible hacerlo para millones de usuarios. Un sistema de Machine Learning compara tus gustos con los de miles de personas con hábitos parecidos a los tuyos y te sugiere contenido automáticamente.",
+                emoji: "🎬🎧",
+                takeaway: "Netflix y Spotify usan algoritmos que comparan tus gustos con usuarios similares automáticamente."
+            },
+            {
+                title: "El filtro de correo basura (Spam)",
+                question: "Tu correo electrónico aprende a detectar mensajes de estafas o publicidad molesta observando qué correos abres, cuáles borras y cuáles marcas como 'no deseado'.",
+                correctAnswer: true, // Verdadero
+                explanation: "El filtro mejora con la experiencia. Cada vez que tú y otros usuarios reportan un correo como basura, el sistema detecta palabras o remitentes sospechosos y aprende a bloquearlos solos la próxima vez.",
+                emoji: "📧🛡️",
+                takeaway: "Los filtros de Spam aprenden de los reportes de los usuarios para bloquear nuevas estafas."
+            },
+            {
+                title: "El teclado adivino de WhatsApp",
+                question: "Para que el teclado de tu celular te sugiera la siguiente palabra cuando escribes un mensaje, un programador tuvo que escribir antes todas las frases que tú dices en una lista gigante.",
+                correctAnswer: false, // Falso
+                explanation: "El teclado aprende de ti sobre la marcha. Al principio sugiere palabras generales, pero con el uso va memorizando tus modismos, apodos y las palabras que más repites para adaptarse a tu forma de hablar.",
+                emoji: "💬📱",
+                takeaway: "El teclado predictivo memoriza tus palabras frecuentes y modismos sobre la marcha."
+            },
+            {
+                title: "El tráfico en Google Maps y Waze",
+                question: "Estas aplicaciones calculan a qué hora llegarás combinando la velocidad actual de otros conductores con lo que el sistema ha aprendido del tráfico en ese mismo día y hora durante meses pasados.",
+                correctAnswer: true, // Verdadero
+                explanation: "El sistema cruza lo que pasa en vivo con patrones históricos (por ejemplo, sabe que los viernes de quincena a las 6:00 PM siempre hay más tráfico) para darte un tiempo de llegada muy preciso.",
+                emoji: "🚗🗺️",
+                takeaway: "Google Maps y Waze combinan datos en tiempo real con el historial de tráfico de meses anteriores."
+            },
+            {
+                title: "Las fotos de tu galería",
+                question: "Si buscas la palabra 'perro' o 'playa' en la galería de fotos de tu celular y aparecen las imágenes correctas aunque nunca les hayas puesto nombre, es porque el teléfono aprendió a reconocer objetos viendo millones de fotos de ejemplo.",
+                correctAnswer: true, // Verdadero
+                explanation: "Igual que un niño aprende cómo es un perro viendo muchos perros distintos, al sistema se le entrenó mostrándole millones de fotos hasta que aprendió a distinguir formas de animales, rostros y paisajes por su cuenta.",
+                emoji: "🐶🏖️",
+                takeaway: "La galería de tu celular reconoce objetos y rostros porque fue entrenada con millones de imágenes."
+            }
+        ];
+
+        // ==========================================
+        // ESTADO DEL JUEGO
+        // ==========================================
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let hasAnsweredCurrent = false;
+        let userAnswers = [];
+        let soundEnabled = true;
+        let synth = null;
+
+        // ==========================================
+        // SISTEMA DE SONIDO SINTÉTICO (TONE.JS)
+        // ==========================================
+        function initAudio() {
+            if (!synth && typeof Tone !== 'undefined') {
+                try {
+                    synth = new Tone.PolySynth(Tone.Synth).toDestination();
+                    synth.volume.value = -8;
+                } catch (e) {
+                    console.warn("Audio no disponible:", e);
+                }
+            }
+        }
+
+        function playSound(type) {
+            if (!soundEnabled || typeof Tone === 'undefined') return;
+            try {
+                if (Tone.context.state !== 'running') {
+                    Tone.start();
+                }
+                initAudio();
+                if (!synth) return;
+
+                const now = Tone.now();
+                if (type === 'correct') {
+                    synth.triggerAttackRelease(["C5", "E5", "G5"], "16n", now);
+                } else if (type === 'wrong') {
+                    synth.triggerAttackRelease(["F3", "B2"], "8n", now);
+                } else if (type === 'start') {
+                    synth.triggerAttackRelease(["C4", "G4"], "16n", now);
+                } else if (type === 'finish') {
+                    synth.triggerAttackRelease(["C4", "E4", "G4", "C5"], "8n", now);
+                }
+            } catch (e) {
+                // Ignorar errores de políticas de reproducción automática
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('sound-icon').textContent = soundEnabled ? '🔊' : '🔇';
+            document.getElementById('sound-text').textContent = soundEnabled ? 'Sonido: ON' : 'Sonido: OFF';
+        }
+
+        // ==========================================
+        // FLUJO PRINCIPAL DEL JUEGO
+        // ==========================================
+        function startGame() {
+            playSound('start');
+            currentQuestionIndex = 0;
+            score = 0;
+            userAnswers = [];
+            stopConfetti();
+
+            document.getElementById('welcome-screen').classList.add('hidden');
+            document.getElementById('results-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            hasAnsweredCurrent = false;
+            const q = questions[currentQuestionIndex];
+
+            // Actualizar contadores y barra
+            document.getElementById('question-counter').textContent = `Pregunta ${currentQuestionIndex + 1} de ${questions.length}`;
+            document.getElementById('live-score').textContent = score;
+            const progressPercent = ((currentQuestionIndex + 1) / questions.length) * 100;
+            document.getElementById('progress-bar').style.width = `${progressPercent}%`;
+
+            // Animar contenedor
+            const container = document.getElementById('question-container');
+            container.classList.remove('animate-card');
+            void container.offsetWidth; // Forzar reflow para reiniciar animación
+            container.classList.add('animate-card');
+
+            // Insertar textos
+            document.getElementById('question-emoji').textContent = q.emoji;
+            document.getElementById('question-title').textContent = `${currentQuestionIndex + 1}. ${q.title}`;
+            document.getElementById('question-text').textContent = `"${q.question}"`;
+
+            // Restablecer botones
+            const btnTrue = document.getElementById('btn-true');
+            const btnFalse = document.getElementById('btn-false');
+
+            btnTrue.disabled = false;
+            btnFalse.disabled = false;
+
+            btnTrue.className = "game-btn flex items-center justify-center gap-3 py-4 px-6 rounded-2xl bg-slate-800/90 hover:bg-emerald-950/60 border-2 border-emerald-500/40 hover:border-emerald-400 text-white font-bold text-lg shadow-lg";
+            btnFalse.className = "game-btn flex items-center justify-center gap-3 py-4 px-6 rounded-2xl bg-slate-800/90 hover:bg-rose-950/60 border-2 border-rose-500/40 hover:border-rose-400 text-white font-bold text-lg shadow-lg";
+
+            // Ocultar tarjeta de explicación y mostrar pista de teclado
+            document.getElementById('feedback-card').classList.add('hidden');
+            document.getElementById('keyboard-hint').classList.remove('sm:hidden');
+        }
+
+        function submitAnswer(userChoice) {
+            if (hasAnsweredCurrent) return;
+            hasAnsweredCurrent = true;
+
+            const q = questions[currentQuestionIndex];
+            const isCorrect = (userChoice === q.correctAnswer);
+
+            if (isCorrect) {
+                score++;
+                document.getElementById('live-score').textContent = score;
+                playSound('correct');
+            } else {
+                playSound('wrong');
+            }
+
+            userAnswers.push({
+                questionIndex: currentQuestionIndex,
+                userChoice: userChoice,
+                isCorrect: isCorrect
+            });
+
+            // Estilizar botones según respuesta
+            const btnTrue = document.getElementById('btn-true');
+            const btnFalse = document.getElementById('btn-false');
+            btnTrue.disabled = true;
+            btnFalse.disabled = true;
+
+            // Resaltar cuál era la correcta y cuál eligió el usuario
+            if (q.correctAnswer === true) {
+                btnTrue.className = "flex items-center justify-center gap-3 py-4 px-6 rounded-2xl bg-emerald-600/30 border-2 border-emerald-400 text-emerald-200 font-bold text-lg shadow-lg scale-[1.02]";
+                btnFalse.className = "flex items-center justify-center gap-3 py-4 px-6 rounded-2xl bg-slate-900/40 border border-slate-700/50 text-slate-500 font-bold text-lg opacity-50";
+            } else {
+                btnFalse.className = "flex items-center justify-center gap-3 py-4 px-6 rounded-2xl bg-emerald-600/30 border-2 border-emerald-400 text-emerald-200 font-bold text-lg shadow-lg scale-[1.02]";
+                btnTrue.className = "flex items-center justify-center gap-3 py-4 px-6 rounded-2xl bg-slate-900/40 border border-slate-700/50 text-slate-500 font-bold text-lg opacity-50";
+            }
+
+            // Si el usuario se equivocó, marcar su botón en rojo
+            if (!isCorrect) {
+                const wrongBtn = userChoice ? btnTrue : btnFalse;
+                wrongBtn.className = "flex items-center justify-center gap-3 py-4 px-6 rounded-2xl bg-rose-600/30 border-2 border-rose-400 text-rose-200 font-bold text-lg opacity-90";
+            }
+
+            // Mostrar tarjeta de retroalimentación
+            const feedbackCard = document.getElementById('feedback-card');
+            const feedbackIcon = document.getElementById('feedback-icon');
+            const feedbackTitle = document.getElementById('feedback-title');
+            const feedbackExplanation = document.getElementById('feedback-explanation');
+            const nextBtnText = document.getElementById('next-btn-text');
+
+            const correctLabel = q.correctAnswer ? "VERDADERO" : "FALSO";
+
+            if (isCorrect) {
+                feedbackCard.className = "mt-6 rounded-2xl p-5 border bg-emerald-950/50 border-emerald-500/40 animate-card";
+                feedbackIcon.textContent = "🎉";
+                feedbackTitle.className = "font-extrabold text-base sm:text-lg mb-1 text-emerald-300";
+                feedbackTitle.textContent = `¡Excelente! La respuesta es ${correctLabel}.`;
+            } else {
+                feedbackCard.className = "mt-6 rounded-2xl p-5 border bg-rose-950/50 border-rose-500/40 animate-card";
+                feedbackIcon.textContent = "💡";
+                feedbackTitle.className = "font-extrabold text-base sm:text-lg mb-1 text-rose-300";
+                feedbackTitle.textContent = `¡Casi! En realidad es ${correctLabel}.`;
+            }
+
+            feedbackExplanation.textContent = q.explanation;
+
+            if (currentQuestionIndex === questions.length - 1) {
+                nextBtnText.textContent = "Ver Resultados Finales";
+            } else {
+                nextBtnText.textContent = "Siguiente Pregunta";
+            }
+
+            feedbackCard.classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            if (currentQuestionIndex < questions.length - 1) {
+                currentQuestionIndex++;
+                renderQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            playSound('finish');
+            document.getElementById('quiz-screen').classList.add('hidden');
+            const resultsScreen = document.getElementById('results-screen');
+            resultsScreen.classList.remove('hidden');
+
+            document.getElementById('final-score').textContent = score;
+
+            const badge = document.getElementById('result-badge');
+            const msg = document.getElementById('result-message');
+
+            if (score === 5) {
+                badge.textContent = "🏆";
+                msg.textContent = "¡Puntaje perfecto! Ya eres todo un detective del Machine Learning cotidiano.";
+                startConfetti();
+            } else if (score >= 3) {
+                badge.textContent = "🌟";
+                msg.textContent = "¡Muy buen trabajo! Ya identificas cómo aprenden tus aplicaciones favoritas.";
+                startConfetti();
+            } else {
+                badge.textContent = "🚀";
+                msg.textContent = "¡Buen intento! Hoy descubriste varios secretos que ocurren dentro de tu celular.";
+            }
+
+            // Construir lista de resumen
+            const summaryList = document.getElementById('summary-list');
+            summaryList.innerHTML = '';
+
+            questions.forEach((q, idx) => {
+                const userAns = userAnswers[idx];
+                const wasRight = userAns && userAns.isCorrect;
+                const badgeColor = wasRight
+                    ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                    : "bg-amber-500/20 text-amber-300 border-amber-500/30";
+                const statusIcon = wasRight ? "✓ Acertaste" : "💡 Aprendido";
+
+                const item = document.createElement('div');
+                item.className = "bg-slate-800/70 border border-slate-700/70 rounded-2xl p-3.5 flex items-start gap-3 text-left";
+                item.innerHTML = `
+                    <div class="text-2xl shrink-0 mt-0.5">${q.emoji}</div>
+                    <div class="flex-1">
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
+                            <span class="font-bold text-white text-xs sm:text-sm">${q.title}</span>
+                            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full border ${badgeColor}">
+                                ${statusIcon} (${q.correctAnswer ? 'Verdadero' : 'Falso'})
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-300 leading-relaxed">${q.takeaway}</p>
+                    </div>
+                `;
+                summaryList.appendChild(item);
+            });
+        }
+
+        function restartGame() {
+            startGame();
+        }
+
+        // Soporte para controles con teclado (V = Verdadero, F = Falso, Enter/Espacio = Siguiente)
+        window.addEventListener('keydown', (e) => {
+            const quizVisible = !document.getElementById('quiz-screen').classList.contains('hidden');
+            if (!quizVisible) return;
+
+            const key = e.key.toLowerCase();
+            if (!hasAnsweredCurrent) {
+                if (key === 'v' || key === 'arrowleft') {
+                    submitAnswer(true);
+                } else if (key === 'f' || key === 'arrowright') {
+                    submitAnswer(false);
+                }
+            } else {
+                if (key === 'enter' || key === ' ') {
+                    e.preventDefault();
+                    nextQuestion();
+                }
+            }
+        });
+
+        // ==========================================
+        // SISTEMA DE CONFETI EN CANVAS
+        // ==========================================
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        let confettiParticles = [];
+        let confettiAnimationId = null;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function startConfetti() {
+            confettiParticles = [];
+            const colors = ['#38bdf8', '#818cf8', '#34d399', '#fbbf24', '#f472b6'];
+            for (let i = 0; i < 90; i++) {
+                confettiParticles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    w: Math.random() * 10 + 5,
+                    h: Math.random() * 6 + 4,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    speedY: Math.random() * 3 + 2,
+                    speedX: Math.random() * 2 - 1,
+                    rotation: Math.random() * 360,
+                    rotationSpeed: Math.random() * 6 - 3
+                });
+            }
+            if (!confettiAnimationId) {
+                animateConfetti();
+            }
+        }
+
+        function animateConfetti() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let activeCount = 0;
+
+            confettiParticles.forEach(p => {
+                p.y += p.speedY;
+                p.x += p.speedX;
+                p.rotation += p.rotationSpeed;
+
+                if (p.y < canvas.height + 20) {
+                    activeCount++;
+                }
+
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate((p.rotation * Math.PI) / 180);
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                ctx.restore();
+            });
+
+            if (activeCount > 0) {
+                confettiAnimationId = requestAnimationFrame(animateConfetti);
+            } else {
+                stopConfetti();
+            }
+        }
+
+        function stopConfetti() {
+            if (confettiAnimationId) {
+                cancelAnimationFrame(confettiAnimationId);
+                confettiAnimationId = null;
+            }
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    </script>
+</body>
+</html>
